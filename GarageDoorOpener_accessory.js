@@ -17,7 +17,6 @@
     close: function() {
       cmd.run('sudo python /home/pi/HAP-NodeJS/python/garage.py');
       this.isOpen = false;
-      this.isMoving = true;
     },
     fetchStatus: function() {
       this.isOpen = getSensorReading();
@@ -52,6 +51,9 @@
       }
       else if (value === Characteristic.TargetDoorState.OPEN && !GARAGE_DOOR.isOpen) {
         GARAGE_DOOR.open();
+        garage
+          .getService(Service.GarageDoorOpener)
+          .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPEN);
       }
 
       callback();
