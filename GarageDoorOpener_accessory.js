@@ -7,19 +7,11 @@
   var wpi = require('wiring-pi');
 
   var GARAGE_DOOR = {
-    isOpen: false,
-    isMoving: false,
-    open: function() {
+    isOpening: false,
+    isClosing: false,
+    isOpen: getSensorReading(),
+    run: function() {
       cmd.run('sudo python /home/pi/HAP-NodeJS/python/garage.py');
-      this.isOpen = true;
-      this.isMoving = true;
-    },
-    close: function() {
-      cmd.run('sudo python /home/pi/HAP-NodeJS/python/garage.py');
-      this.isOpen = false;
-    },
-    fetchStatus: function() {
-      this.isOpen = getSensorReading();
     }
   };
 
@@ -43,19 +35,16 @@
 
   garage
     .addService(Service.GarageDoorOpener, 'Garage Door')
-    .setCharacteristic(Characteristic.TargetDoorState, Characteristic.TargetDoorState.CLOSED) // force initial state to CLOSED
+    .setCharacteristic(Characteristic.TargetDoorState, GARAGE_DOOR.isOpen ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.CLOSED)
     .getCharacteristic(Characteristic.TargetDoorState)
     .on('set', function(value, callback) {
-      if (value === Characteristic.TargetDoorState.CLOSED && GARAGE_DOOR.isOpen) {
-        GARAGE_DOOR.close();
-      }
-      else if (value === Characteristic.TargetDoorState.OPEN && !GARAGE_DOOR.isOpen) {
-        GARAGE_DOOR.open();
-        garage
-          .getService(Service.GarageDoorOpener)
-          .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPEN);
+      if (value === Characteristic.TargetDoorState.CLOSED) {
+        GARAGE_DOOR.isClosing = true;
+      } else if (value === Characteristic.TargetDoorState.OPEN) {
+        GARAGE_DOOR.isOpening = true;
       }
 
+      GARAGE_DOOR.run();
       callback();
     });
 
@@ -63,27 +52,34 @@
     .getService(Service.GarageDoorOpener)
     .getCharacteristic(Characteristic.CurrentDoorState)
     .on('get', function(callback) {
-      GARAGE_DOOR.fetchStatus();
       callback(null, GARAGE_DOOR.isOpen ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED);
     });
 
   setInterval(function() {
-    if (getSensorReading() === GARAGE_DOOR.isOpen) {
+    var garageOpen = getSensorReading();
+
+    if (garageOpen === GARAGE_DOOR.isOpen) {
       return;
     }
 
-    GARAGE_DOOR.fetchStatus();
-
-    garage
-      .getService(Service.GarageDoorOpener)
-      .setCharacteristic(Characteristic.CurrentDoorState, !GARAGE_DOOR.isOpen);
-
-    if (GARAGE_DOOR.isMoving) {
-      GARAGE_DOOR.isMoving = false;
-    } else {
+    if (GARAGE_DOOR.isClosing) {
+      GARAGE_DOOR.isClosing = false;
+      GARAGE_DOOR.isOpen = false;
       garage
         .getService(Service.GarageDoorOpener)
-        .setCharacteristic(Characteristic.TargetDoorState, !GARAGE_DOOR.isOpen);
+        .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.CLOSED);
+    } else if (GARAGE_DOOR.isOpening) {
+      GARAGE_DOOR.isOpening = false;
+      GARAGE_DOOR.isOpen = true;
+      garage
+        .getService(Service.GarageDoorOpener)
+        .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPEN);
+    } else {
+      GARAGE_DOOR.isOpen = garageOpen;
+      garage
+        .getService(Service.GarageDoorOpener)
+        .setCharacteristic(Characteristic.CurrentDoorState, GARAGE_DOOR.isOpen ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED)
+        .setCharacteristic(Characteristic.TargetDoorState, GARAGE_DOOR.isOpen ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.CLOSED);
     }
   }, 1000);
 
