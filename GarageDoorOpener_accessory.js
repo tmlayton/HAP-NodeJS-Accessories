@@ -38,13 +38,14 @@
     .setCharacteristic(Characteristic.TargetDoorState, GARAGE_DOOR.isOpen ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.CLOSED)
     .getCharacteristic(Characteristic.TargetDoorState)
     .on('set', function(value, callback) {
-      if (value === Characteristic.TargetDoorState.CLOSED) {
+      if (value === Characteristic.TargetDoorState.CLOSED && GARAGE_DOOR.isOpen) {
         GARAGE_DOOR.isClosing = true;
-      } else if (value === Characteristic.TargetDoorState.OPEN) {
+        GARAGE_DOOR.run();
+      } else if (value === Characteristic.TargetDoorState.OPEN && !GARAGE_DOOR.isOpen) {
         GARAGE_DOOR.isOpening = true;
+        GARAGE_DOOR.run();
       }
 
-      GARAGE_DOOR.run();
       callback();
     });
 
