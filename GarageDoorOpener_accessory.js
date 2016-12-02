@@ -76,7 +76,8 @@
         .getService(Service.GarageDoorOpener)
         .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPEN);
     } else {
-      GARAGE_DOOR.isOpen = forceGarageDoorState(newSensorReading);
+      GARAGE_DOOR.isOpen = newSensorReading;
+      forceGarageDoorState(newSensorReading);
     }
   }, 1000);
 
@@ -85,8 +86,6 @@
       .getService(Service.GarageDoorOpener)
       .setCharacteristic(Characteristic.CurrentDoorState, newSensorReading ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED)
       .setCharacteristic(Characteristic.TargetDoorState, newSensorReading ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.CLOSED);
-
-    return newSensorReading;
   }
 
   function getSensorReading() {
