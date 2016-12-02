@@ -57,9 +57,9 @@
     });
 
   setInterval(function() {
-    var garageOpen = getSensorReading();
+    var newSensorReading = getSensorReading();
 
-    if (garageOpen === GARAGE_DOOR.isOpen) {
+    if (!sensorReadingChanged(newSensorReading)) {
       return;
     }
 
@@ -76,16 +76,25 @@
         .getService(Service.GarageDoorOpener)
         .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPEN);
     } else {
-      GARAGE_DOOR.isOpen = garageOpen;
-      garage
-        .getService(Service.GarageDoorOpener)
-        .setCharacteristic(Characteristic.CurrentDoorState, GARAGE_DOOR.isOpen ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED)
-        .setCharacteristic(Characteristic.TargetDoorState, GARAGE_DOOR.isOpen ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.CLOSED);
+      GARAGE_DOOR.isOpen = forceGarageDoorState(newSensorReading);
     }
   }, 1000);
+
+  function forceGarageDoorState(newSensorReading) {
+    garage
+      .getService(Service.GarageDoorOpener)
+      .setCharacteristic(Characteristic.CurrentDoorState, newSensorReading ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED)
+      .setCharacteristic(Characteristic.TargetDoorState, newSensorReading ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.CLOSED);
+
+    return newSensorReading;
+  }
 
   function getSensorReading() {
     wpi.setup('phys');
     return Boolean(wpi.digitalRead(12));
+  }
+
+  function sensorReadingChanged(newSensorReading) {
+    return newSensorReading !== GARAGE_DOOR.isOpen
   }
 })();
