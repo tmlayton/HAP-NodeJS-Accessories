@@ -41,7 +41,7 @@
       if (value === Characteristic.TargetDoorState.CLOSED && GARAGE_DOOR.isOpen) {
         GARAGE_DOOR.isClosing = true;
         GARAGE_DOOR.run();
-      } else if (value === Characteristic.TargetDoorState.OPEN && !GARAGE_DOOR.isOpen) {
+      } else if (value === Characteristic.TargetDoorState.OPEN && GARAGE_DOOR.isOpen === false) {
         GARAGE_DOOR.isOpening = true;
         GARAGE_DOOR.run();
       }
@@ -53,13 +53,19 @@
     .getService(Service.GarageDoorOpener)
     .getCharacteristic(Characteristic.CurrentDoorState)
     .on('get', function(callback) {
+      var newSensorReading = getSensorReading();
+
+      if (sensorReadingChanged(newSensorReading) === false) {
+        return;
+      }
+
       callback(null, GARAGE_DOOR.isOpen ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED);
     });
 
   setInterval(function() {
     var newSensorReading = getSensorReading();
 
-    if (!sensorReadingChanged(newSensorReading)) {
+    if (sensorReadingChanged(newSensorReading) === false) {
       return;
     }
 
