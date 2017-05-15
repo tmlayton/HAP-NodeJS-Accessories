@@ -35,6 +35,7 @@
 
   garage
     .addService(Service.GarageDoorOpener, 'Garage Door')
+    .setCharacteristic(Characteristic.TargetDoorState, GARAGE_DOOR.isOpen ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.CLOSED)
     .getCharacteristic(Characteristic.TargetDoorState)
     .on('set', function(value, callback) {
       if (value === Characteristic.TargetDoorState.CLOSED && GARAGE_DOOR.isOpen) {
